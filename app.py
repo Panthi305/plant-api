@@ -19,6 +19,7 @@ collection = db["plants"]
 # Simple API key check
 def check_api_key():
     key = request.headers.get("x-api-key")
+    print("Received API key:", key)
     return key == API_KEY
 
 @app.route("/")
