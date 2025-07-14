@@ -48,6 +48,31 @@ def get_plant_by_name():
         return jsonify(plant)
     return jsonify({"error": "Plant not found"}), 404
 
+@app.route("/api/plants/search", methods=["GET"])
+def search_plants_by_condition():
+    if not check_api_key():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    query = request.args.get("condition", "")
+    if not query:
+        return jsonify({"error": "Please provide a condition to search"}), 400
+
+    # Split by comma and clean each term
+    keywords = [term.strip().lower() for term in query.split(",") if term.strip()]
+    if not keywords:
+        return jsonify({"error": "Invalid search terms"}), 400
+
+    # Build regex filters for each keyword
+    conditions = []
+    for term in keywords:
+        conditions.append({"medicinal_uses": {"$elemMatch": {"$regex": term, "$options": "i"}}})
+        conditions.append({"search_tags": {"$elemMatch": {"$regex": term, "$options": "i"}}})
+
+    # Search with OR condition
+    plants = list(collection.find({"$or": conditions}, {"_id": 0}))
+
+    return jsonify(plants)
+
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
